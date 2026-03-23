@@ -961,8 +961,7 @@
                 }
             }
         }
-
-        function logout() {
+function logout() {
     const confirmLogout = confirm("Are you sure you want to logout?");
     
     if (confirmLogout) {
@@ -970,6 +969,12 @@
         localStorage.removeItem("userData");
         window.location.href = "login.html";
     }
+}
+
+if (localStorage.getItem("isLoggedIn") === "true") {
+    loadSettings();   
+} else {
+    window.location.href = "login.html";
 }
         
     </script>
