@@ -479,7 +479,12 @@
         window.location.href = "login.html";
     }
 }
-        
+
+if (localStorage.getItem("isLoggedIn") === "true") {
+    loadStatistics();
+} else {
+    window.location.href = "login.html";
+}
     </script>
 </body>
 </html>
