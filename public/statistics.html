@@ -396,12 +396,6 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-    <script src="assets/js/firebase-config.js"></script>
-
     <script>
         async function loadSettings() {
             const user = firebase.auth().currentUser;
@@ -477,18 +471,15 @@
         }
 
         function logout() {
-            firebase.auth().signOut().then(() => {
-                window.location.href = 'login.html';
-            });
-        }
-
-        firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-                loadSettings();
-            } else {
-                window.location.href = 'login.html';
-            }
-        });
+    const confirmLogout = confirm("Are you sure you want to logout?");
+    
+    if (confirmLogout) {
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("userData");
+        window.location.href = "login.html";
+    }
+}
+        
     </script>
 </body>
 </html>
