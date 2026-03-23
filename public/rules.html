@@ -415,20 +415,21 @@
                 alert('Failed to delete rule: ' + result.error);
             }
         }
+function logout() {
+    const confirmLogout = confirm("Are you sure you want to logout?");
+    
+    if (confirmLogout) {
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("userData");
+        window.location.href = "login.html";
+    }
+}
 
-        function logout() {
-            firebase.auth().signOut().then(() => {
-                window.location.href = 'login.html';
-            });
-        }
-
-        firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-                loadRules();
-            } else {
-                window.location.href = 'login.html';
-            }
-        });
+if (localStorage.getItem("isLoggedIn") === "true") {
+    loadRules();  
+} else {
+    window.location.href = "login.html";
+}
     </script>
 </body>
 </html>
