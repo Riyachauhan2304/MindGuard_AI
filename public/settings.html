@@ -396,12 +396,7 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-    <script src="assets/js/firebase-config.js"></script>
-
+   
     <script>
         async function loadSettings() {
             const user = firebase.auth().currentUser;
@@ -420,15 +415,34 @@
                 document.getElementById('profileAvatar').textContent = data.name.charAt(0).toUpperCase();
             }
 
-            // Load settings
-            const settingsResult = await FirebaseHelper.getUserSettings(user.uid);
-            if (settingsResult.success) {
-                const settings = settingsResult.settings;
-                document.getElementById('focusStart').value = settings.focusHoursStart || '09:00';
-                document.getElementById('focusEnd').value = settings.focusHoursEnd || '17:00';
-                document.getElementById('strictMode').checked = settings.strictMode !== false;
-                document.getElementById('darkMode').checked = settings.darkMode === true;
-            }
+           function loadSettings() {
+
+
+    // ✅ GET DATA FROM LOCALSTORAGE
+    const user = JSON.parse(localStorage.getItem("userData"));
+
+    if (!user) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    // ✅ UPDATE UI
+    document.getElementById('profileName').textContent = user.name;
+    document.getElementById('profileEmail').textContent = user.email;
+    document.getElementById('profileRole').textContent =
+        user.role.charAt(0).toUpperCase() + user.role.slice(1);
+
+    document.getElementById('profileAvatar').textContent =
+        user.name.charAt(0).toUpperCase();
+
+    // ✅ settings load
+    const settings = JSON.parse(localStorage.getItem("settings")) || {};
+
+    document.getElementById('focusStart').value = settings.focusHoursStart || '09:00';
+    document.getElementById('focusEnd').value = settings.focusHoursEnd || '17:00';
+    document.getElementById('strictMode').checked = settings.strictMode !== false;
+    document.getElementById('darkMode').checked = settings.darkMode === true;
+}
         }
 
         async function saveSettings() {
