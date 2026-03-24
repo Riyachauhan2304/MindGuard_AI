@@ -315,10 +315,10 @@ input:checked + .toggle-slider:before {
     border-top: 2px solid var(--light);
 }
 
-.btn-logout {
+.btn-reset {
     width: 100%;
     padding: 10px;
-    background: var(--danger);
+    background: #f59e0b;
     color: var(--white);
     border: none;
     border-radius: 8px;
@@ -328,8 +328,8 @@ input:checked + .toggle-slider:before {
     transition: all 0.3s;
 }
 
-.btn-logout:hover {
-    background: #dc2626;
+.btn-reset:hover {
+    background: #d97706;
     transform: translateY(-2px);
 }
 

@@ -1,11 +1,21 @@
-// Get user data from chrome storage
+// Get user data from chrome storage (auto-initialize with Guest User if needed)
 chrome.storage.local.get(['user', 'stats', 'activity', 'settings'], (result) => {
+    // Ensure user profile exists, create Guest User if not
     if (!result.user) {
-        window.location.href = 'login.html';
-        return;
+        const defaultUser = {
+            id: 'guest-user',
+            name: 'Guest User',
+            email: 'guest@mindguard.local',
+            role: 'user',
+            joinDate: new Date().toISOString()
+        };
+        chrome.storage.local.set({ user: defaultUser }, () => {
+            result.user = defaultUser;
+            loadDashboard(result);
+        });
+    } else {
+        loadDashboard(result);
     }
-    
-    loadDashboard(result);
 });
 
 function loadDashboard(data) {
@@ -104,11 +114,19 @@ function openAnalytics() {
     chrome.tabs.create({ url: chrome.runtime.getURL('analytics.html') });
 }
 
-function logout() {
-    if (confirm('Are you sure you want to logout?')) {
-        chrome.storage.local.remove(['user', 'stats', 'activity'], () => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('login.html') });
-            window.close();
+function resetData() {
+    if (confirm('Reset all data to defaults? Your activity log will be cleared.')) {
+        chrome.storage.local.set({
+            stats: {
+                focusScore: 0,
+                blockedCount: 0,
+                completedCount: 0,
+                timeSaved: 0
+            },
+            activity: [],
+            rules: []
+        }, () => {
+            location.reload();
         });
     }
 }

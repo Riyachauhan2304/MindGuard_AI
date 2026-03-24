@@ -1,8 +1,15 @@
 // Service Worker for MindGuard Extension
 
-// Initialize storage on install
+// Initialize storage on install with default Guest User
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({
+        user: {
+            id: 'guest-user',
+            name: 'Guest User',
+            email: 'guest@mindguard.local',
+            role: 'user',
+            joinDate: new Date().toISOString()
+        },
         rules: [],
         stats: {
             focusScore: 0,
@@ -17,7 +24,8 @@ chrome.runtime.onInstalled.addListener(() => {
             weekendMode: false,
             notifications: true,
             focusStart: '09:00',
-            focusEnd: '17:00'
+            focusEnd: '17:00',
+            theme: 'light'
         }
     });
 });

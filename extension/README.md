@@ -1,6 +1,6 @@
 # MindGuard - Chrome Extension
 
-A fully functional Chrome Extension that blocks distracting websites and helps users stay focused using AI-powered microtasks and gamified challenges.
+A fully functional Chrome Extension that blocks distracting websites instantly. No login required - works out-of-the-box with a Guest User profile.
 
 ## Features Implemented
 
@@ -11,11 +11,11 @@ A fully functional Chrome Extension that blocks distracting websites and helps u
 - Popup dashboard for quick stats and control
 - Options page for comprehensive settings
 
-✅ **User Authentication**
-- Login system with demo account support
-- User registration with validation
-- Chrome storage-based session management
-- Profile management
+✅ **Instant Setup - No Login Required**
+- Works immediately after installation
+- Default Guest User profile automatically created
+- All data stored locally using Chrome's storage API
+- Privacy-first approach with zero backend dependencies
 
 ✅ **Core Blocking System**
 - Dynamic rule management (add/remove/block rules)
@@ -75,20 +75,20 @@ extension/
 ├── options.js                 # Settings functionality
 ├── background.js              # Service worker
 ├── content.js                 # Content script for blocking
-├── login.html                 # Login page
-├── register.html              # Registration page
 ├── blocked.html               # Blocked site page
 ├── analytics.html             # Analytics dashboard
 ├── icons/                     # Icon assets
 │   ├── icon-16.png
 │   ├── icon-48.png
 │   └── icon-128.png
-└── README.md                  # This file
+├── README.md                  # This file
+├── INSTALLATION_GUIDE.md      # Installation instructions
+└── QUICK_START.md             # Quick start guide
 ```
 
 ## Installation
 
-### For Development/Testing
+### Quick Install (Development/Testing)
 
 1. **Clone or extract the extension files**
    - Ensure all files are in the `/extension/` folder
@@ -109,14 +109,14 @@ extension/
    - Click the puzzle icon in the toolbar
    - Find "MindGuard" and click the pin icon to add to toolbar
 
-### Demo Login
+### First Launch
 
-When you first open the extension, use these credentials:
+**The extension works instantly!** 
 
-- **Email:** demo@mindguard.com
-- **Password:** demo123
-
-Or create a new account with any email and password (6+ characters).
+- Click the MindGuard icon in your toolbar
+- You'll see your dashboard with a default "Guest User" profile
+- All data is stored locally - no login or registration needed
+- Start adding rules and blocking distracting sites immediately
 
 ## How to Use
 
@@ -170,15 +170,16 @@ When you try to access a blocked site:
 
 ## Storage Architecture
 
-The extension uses Chrome's `chrome.storage.local` API to persist data:
+The extension uses Chrome's `chrome.storage.local` API to persist all data locally on your device:
 
 ```javascript
 {
   user: {
-    name: "User Name",
-    email: "email@example.com",
+    id: "guest-user",
+    name: "Guest User",
+    email: "guest@mindguard.local",
     role: "user",
-    loginTime: "ISO timestamp"
+    joinDate: "ISO timestamp"
   },
   rules: [
     { id, domain, action: "block"|"allow", createdAt }
@@ -199,10 +200,12 @@ The extension uses Chrome's `chrome.storage.local` API to persist data:
     notifications: boolean,
     focusStart: "HH:MM",
     focusEnd: "HH:MM",
-    theme: "light"|"dark"|"auto"
+    theme: "light"
   }
 }
 ```
+
+**Privacy Note:** All data stays on your device. No data is sent to any server or cloud service.
 
 ## Permissions Explained
 
@@ -270,11 +273,11 @@ let timeRemaining = 300; // 5 minutes in seconds
 
 ## Known Limitations
 
-1. **No backend authentication** - Uses local storage only (perfect for privacy)
-2. **No cloud sync** - Data doesn't sync across devices
-3. **No password hashing** - Demo implementation (add bcrypt for production)
-4. **Simple blocking** - Uses content script (not declarativeNetRequest API yet)
-5. **No AI features** - Microtasks are static (can integrate AI APIs)
+1. **No cloud sync** - Data stays local to this device (by design for privacy)
+2. **No multi-device sync** - Each device maintains its own separate blocklist
+3. **Simple blocking** - Uses content script (not declarativeNetRequest API yet)
+4. **No AI features** - Microtasks are static (can integrate AI APIs)
+5. **Manual data backup** - No automatic backup system (can export/import later)
 
 ## Future Enhancements
 

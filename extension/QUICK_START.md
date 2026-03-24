@@ -15,19 +15,20 @@ Type this in Chrome: chrome://extensions/
 - Select the `/extension/` folder
 - Done! ✅
 
-## 🎯 First Run (2 Minutes)
+## 🎯 First Run (30 Seconds)
 
 ### 1. Click MindGuard Icon
 - Find it in your toolbar (or extensions menu)
 
-### 2. Demo Login
-- Click **Demo Login** button
-- Email: demo@mindguard.com
-- Password: demo123
+### 2. You're In!
+- You'll see your dashboard immediately
+- Logged in as "Guest User"
+- No login or setup needed!
 
-### 3. You're In!
-- You'll see the dashboard
-- No further setup needed
+### 3. Start Blocking
+- Click ⚙️ Settings
+- Add your first rule
+- Done!
 
 ## ⚡ Quick Demo (3 Minutes)
 
@@ -175,11 +176,11 @@ After demo, consider blocking:
 
 Want to start fresh?
 
-1. Go to Settings
-2. Click ⚙️ Profile tab
-3. Danger Zone
-4. Click "Clear All Data"
-5. Logout and re-register
+1. Go to Settings ⚙️
+2. Click Profile tab
+3. Click "🗑️ Reset All Data"
+4. Confirm the action
+5. All data is deleted and dashboard resets
 
 ## ✨ Ready to Go!
 

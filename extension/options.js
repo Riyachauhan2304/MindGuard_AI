@@ -31,16 +31,27 @@ function switchTab(tabName) {
     }
 }
 
-// Load initial data
+// Load initial data (auto-initialize with Guest User if needed)
 chrome.storage.local.get(['user', 'rules', 'stats'], (result) => {
+    // Ensure user profile exists, create Guest User if not
     if (!result.user) {
-        window.location.href = 'login.html';
-        return;
+        const defaultUser = {
+            id: 'guest-user',
+            name: 'Guest User',
+            email: 'guest@mindguard.local',
+            role: 'user',
+            joinDate: new Date().toISOString()
+        };
+        chrome.storage.local.set({ user: defaultUser }, () => {
+            loadRules(result.rules || []);
+            loadSettings();
+            renderQuickAdd(result.rules || []);
+        });
+    } else {
+        loadRules(result.rules || []);
+        loadSettings();
+        renderQuickAdd(result.rules || []);
     }
-    
-    loadRules(result.rules || []);
-    loadSettings();
-    renderQuickAdd(result.rules || []);
 });
 
 // Rules Management
@@ -245,13 +256,17 @@ function loadAnalytics() {
 // Profile
 function loadProfile() {
     chrome.storage.local.get(['user', 'settings'], (result) => {
-        const user = result.user || {};
+        const user = result.user || {
+            name: 'Guest User',
+            email: 'guest@mindguard.local',
+            role: 'user'
+        };
         const settings = result.settings || {};
 
-        document.getElementById('profileName').textContent = user.name || 'User';
-        document.getElementById('profileEmail').textContent = user.email || 'email@example.com';
-        document.getElementById('profileRole').textContent = `Role: ${user.role || 'User'}`;
-        document.getElementById('profileAvatar').textContent = (user.name || 'U').charAt(0).toUpperCase();
+        document.getElementById('profileName').textContent = user.name || 'Guest User';
+        document.getElementById('profileEmail').textContent = user.email || 'guest@mindguard.local';
+        document.getElementById('profileRole').textContent = `Role: ${user.role || 'user'}`;
+        document.getElementById('profileAvatar').textContent = (user.name || 'G').charAt(0).toUpperCase();
 
         document.getElementById('country').value = settings.country || 'IN';
         document.getElementById('language').value = settings.language || 'en';
@@ -286,7 +301,7 @@ function showToast(message) {
 }
 
 function clearData() {
-    if (!confirm('Are you sure you want to clear all data? This will delete all logs, rules, and history.')) {
+    if (!confirm('Reset all extension data? This will clear activity logs, stats, and rules.')) {
         return;
     }
 
@@ -299,7 +314,7 @@ function clearData() {
         activity: [],
         rules: []
     }, () => {
-        showToast('All data cleared!');
+        showToast('All data has been reset!');
         chrome.runtime.sendMessage({ action: 'updateRules', rules: [] });
         setTimeout(() => {
             window.location.reload();
@@ -307,13 +322,4 @@ function clearData() {
     });
 }
 
-function logout() {
-    if (!confirm('Are you sure you want to logout?')) {
-        return;
-    }
-
-    chrome.storage.local.remove(['user', 'stats', 'activity', 'settings'], () => {
-        chrome.tabs.create({ url: chrome.runtime.getURL('login.html') });
-        window.close();
-    });
-}
+// Data management is handled by the extension, no logout needed
