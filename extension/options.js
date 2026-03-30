@@ -61,39 +61,64 @@ const popularSites = [
     'pinterest.com', 'linkedin.com', 'snapchat.com', 'discord.com'
 ];
 
-document.getElementById('addRuleForm').addEventListener('submit', (e) => {
-    e.preventDefault();
+// Wait for DOM to be ready before attaching event listener
+const addRuleForm = document.getElementById('addRuleForm');
+if (addRuleForm) {
+    console.log('[v0] Add Rule form found and listener attached');
+    addRuleForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        console.log('[v0] Add Rule form submitted');
 
-    const domain = document.getElementById('domain').value.trim();
-    const action = document.getElementById('action').value;
+        const domain = document.getElementById('domain').value.trim();
+        const action = document.getElementById('action').value;
+        
+        console.log('[v0] Domain:', domain, 'Action:', action);
 
-    chrome.storage.local.get(['rules'], (result) => {
-        const rules = result.rules || [];
-
-        if (rules.some(r => r.domain === domain)) {
-            showToast('Rule already exists!');
+        if (!domain) {
+            showToast('Please enter a domain!');
             return;
         }
 
-        const newRule = {
-            id: Date.now().toString(),
-            domain,
-            action,
-            createdAt: new Date().toISOString()
-        };
+        chrome.storage.local.get(['rules'], (result) => {
+            const rules = result.rules || [];
+            console.log('[v0] Current rules:', rules);
 
-        rules.push(newRule);
-        chrome.storage.local.set({ rules }, () => {
-            loadRules(rules);
-            renderQuickAdd(rules);
-            document.getElementById('addRuleForm').reset();
-            showToast('Rule added successfully!');
+            if (rules.some(r => r.domain === domain)) {
+                showToast('Rule already exists!');
+                return;
+            }
+
+            const newRule = {
+                id: Date.now().toString(),
+                domain,
+                action,
+                createdAt: new Date().toISOString()
+            };
+
+            console.log('[v0] New rule:', newRule);
+            rules.push(newRule);
             
-            // Notify background script
-            chrome.runtime.sendMessage({ action: 'updateRules', rules });
+            chrome.storage.local.set({ rules }, () => {
+                console.log('[v0] Rule saved to storage');
+                loadRules(rules);
+                renderQuickAdd(rules);
+                document.getElementById('addRuleForm').reset();
+                showToast('Rule added successfully!');
+                
+                // Notify background script
+                try {
+                    chrome.runtime.sendMessage({ action: 'updateRules', rules }, (response) => {
+                        console.log('[v0] Background script response:', response);
+                    });
+                } catch (error) {
+                    console.log('[v0] SendMessage error:', error);
+                }
+            });
         });
     });
-});
+} else {
+    console.log('[v0] ERROR: Add Rule form not found!');
+}
 
 function loadRules(rules) {
     const container = document.getElementById('rulesList');
@@ -195,6 +220,7 @@ function loadSettings() {
 }
 
 function saveSettings() {
+    console.log('[v0] Saving settings...');
     const settings = {
         focusStart: document.getElementById('focusStart').value,
         focusEnd: document.getElementById('focusEnd').value,
@@ -204,11 +230,21 @@ function saveSettings() {
         theme: document.getElementById('theme').value
     };
 
+    console.log('[v0] Settings object:', settings);
     chrome.storage.local.set({ settings }, () => {
+        console.log('[v0] Settings saved to storage');
         showToast('Settings saved successfully!');
-        chrome.runtime.sendMessage({ action: 'updateSettings', settings });
+        try {
+            chrome.runtime.sendMessage({ action: 'updateSettings', settings }, (response) => {
+                console.log('[v0] Settings update response:', response);
+            });
+        } catch (error) {
+            console.log('[v0] SendMessage error:', error);
+        }
     });
 }
+
+
 
 // Analytics
 function loadAnalytics() {
