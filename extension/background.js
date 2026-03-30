@@ -124,24 +124,36 @@ function completeChallenge(site) {
 
 // Show notification when site is blocked
 function showBlockedNotification(domain) {
-    chrome.notifications.create({
-        type: 'basic',
-        iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
-        title: '🛡️ Site Blocked',
-        message: `${domain} is blocked. Complete a challenge to unlock it!`,
-        priority: 2
-    });
+    try {
+        if (chrome.notifications) {
+            chrome.notifications.create({
+                type: 'basic',
+                iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
+                title: 'Site Blocked',
+                message: `${domain} is blocked. Complete a challenge to unlock it!`,
+                priority: 2
+            });
+        }
+    } catch (error) {
+        console.log('[v0] Notification error:', error);
+    }
 }
 
 // Show notification for challenge completion
 function showSuccessNotification(site) {
-    chrome.notifications.create({
-        type: 'basic',
-        iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
-        title: '✅ Challenge Completed!',
-        message: `Great job! You can now access ${site}.`,
-        priority: 2
-    });
+    try {
+        if (chrome.notifications) {
+            chrome.notifications.create({
+                type: 'basic',
+                iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
+                title: 'Challenge Completed!',
+                message: `Great job! You can now access ${site}.`,
+                priority: 2
+            });
+        }
+    } catch (error) {
+        console.log('[v0] Notification error:', error);
+    }
 }
 
 // Note: Website blocking is handled by content.js (Manifest V3 compatible)
