@@ -1,173 +1,107 @@
-// Service Worker for MindGuard Extension
+// Lightweight Service Worker - MindGuard Extension
+// Handles blocking logic using rules synced from the website
 
-// Initialize storage on install with default Guest User
+// Initialize on install
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({
-        user: {
-            id: 'guest-user',
-            name: 'Guest User',
-            email: 'guest@mindguard.local',
-            role: 'user',
-            joinDate: new Date().toISOString()
-        },
+        blockingEnabled: true,
         rules: [],
-        stats: {
-            focusScore: 0,
-            blockedCount: 0,
-            completedCount: 0,
-            timeSaved: 0
-        },
-        activity: [],
-        settings: {
-            blockingEnabled: true,
-            strictMode: true,
-            weekendMode: false,
-            notifications: true,
-            focusStart: '09:00',
-            focusEnd: '17:00',
-            theme: 'light'
-        }
+        user: null
     });
 });
 
 // Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'updateRules') {
-        chrome.storage.local.set({ rules: request.rules }, () => {
-            sendResponse({ success: true });
+    console.log('[v0] Background message:', request.action);
+    
+    if (request.action === 'blockingToggled') {
+        // Update blocking state in all content scripts
+        chrome.tabs.query({}, (tabs) => {
+            tabs.forEach((tab) => {
+                chrome.tabs.sendMessage(tab.id, {
+                    action: 'updateBlockingState',
+                    enabled: request.enabled
+                }).catch(() => {
+                    // Tab might not have content script loaded
+                });
+            });
         });
-        return true;
-    }
-
-    if (request.action === 'updateSettings') {
-        chrome.storage.local.set({ settings: request.settings }, () => {
-            sendResponse({ success: true });
-        });
-        return true;
-    }
-
-    if (request.action === 'toggleBlocking') {
-        chrome.storage.local.get(['settings'], (result) => {
-            const settings = result.settings || {};
-            settings.blockingEnabled = request.enabled;
-            chrome.storage.local.set({ settings });
-            sendResponse({ success: true });
-        });
-        return true;
-    }
-
-    if (request.action === 'recordBlockedSite') {
-        recordBlockedSite(request.site, request.domain);
         sendResponse({ success: true });
         return true;
     }
-
-    if (request.action === 'completeChallenge') {
-        completeChallenge(request.site);
+    
+    if (request.action === 'getRules') {
+        chrome.storage.local.get(['rules', 'blockingEnabled'], (result) => {
+            sendResponse({
+                rules: result.rules || [],
+                enabled: result.blockingEnabled !== false
+            });
+        });
+        return true;
+    }
+    
+    if (request.action === 'recordBlockedSite') {
+        // Track that a site was blocked (for future analytics)
+        chrome.storage.local.get(['activity'], (result) => {
+            const activity = result.activity || [];
+            activity.push({
+                domain: request.domain,
+                timestamp: new Date().toISOString(),
+                action: 'blocked'
+            });
+            // Keep only last 100 entries
+            if (activity.length > 100) {
+                activity.shift();
+            }
+            chrome.storage.local.set({ activity });
+        });
         sendResponse({ success: true });
         return true;
     }
 });
 
-// Record blocked site activity
-function recordBlockedSite(site, domain) {
-    chrome.storage.local.get(['activity', 'stats'], (result) => {
-        const activity = result.activity || [];
-        const stats = result.stats || {};
+// Optional: Sync rules from website every hour (when user is logged in)
+chrome.alarms.create('syncRules', { periodInMinutes: 60 });
 
-        // Add to activity
-        activity.push({
-            site: domain,
-            action: 'blocked',
-            timestamp: new Date().toISOString()
-        });
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'syncRules') {
+        syncRulesFromWebsite();
+    }
+});
 
-        // Update stats
-        stats.blockedCount = (stats.blockedCount || 0) + 1;
-        stats.timeSaved = (stats.timeSaved || 0) + 5; // Assume 5 minutes saved per block
-
-        chrome.storage.local.set({ activity, stats });
-
-        // Show notification if enabled (optional feature)
-        // chrome.storage.local.get(['settings'], (result) => {
-        //     const settings = result.settings || {};
-        //     if (settings.notifications) {
-        //         showBlockedNotification(domain);
-        //     }
-        // });
-    });
-}
-
-// Record challenge completion
-function completeChallenge(site) {
-    chrome.storage.local.get(['activity', 'stats'], (result) => {
-        const activity = result.activity || [];
-        const stats = result.stats || {};
-
-        // Add to activity
-        activity.push({
-            site,
-            action: 'completed',
-            timestamp: new Date().toISOString()
-        });
-
-        // Update stats
-        stats.completedCount = (stats.completedCount || 0) + 1;
-        stats.focusScore = (stats.focusScore || 0) + 10;
-
-        chrome.storage.local.set({ activity, stats });
-
-        // Show success notification (optional feature)
-        // showSuccessNotification(site);
-    });
-}
-
-// Show notification when site is blocked
-function showBlockedNotification(domain) {
+async function syncRulesFromWebsite() {
     try {
-        const notificationId = 'blocked-' + Date.now();
-        if (chrome && chrome.notifications && chrome.notifications.create) {
-            chrome.notifications.create(notificationId, {
-                type: 'basic',
-                iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
-                title: 'Site Blocked',
-                message: domain + ' is blocked. Complete a challenge to unlock it!',
-                priority: 2
-            }, (id) => {
-                if (chrome.runtime.lastError) {
-                    console.log('[v0] Notification error:', chrome.runtime.lastError);
-                }
-            });
-        }
+        chrome.storage.local.get(['user'], async (result) => {
+            if (!result.user || !result.user.email) {
+                return; // User not logged in
+            }
+            
+            // TODO: Fetch rules from your MindGuard backend API
+            // const response = await fetch('https://your-mindguard-api.com/api/rules', {
+            //     headers: { 'Authorization': `Bearer ${result.user.token}` }
+            // });
+            // const data = await response.json();
+            // chrome.storage.local.set({ rules: data.rules });
+            
+            console.log('[v0] Rules sync completed (mock)');
+        });
     } catch (error) {
-        console.log('[v0] Notification error:', error.message);
+        console.log('[v0] Error syncing rules:', error);
     }
 }
 
-// Show notification for challenge completion
-function showSuccessNotification(site) {
+// Function to check if URL matches any blocking rule
+function shouldBlockUrl(url, rules) {
     try {
-        const notificationId = 'success-' + Date.now();
-        if (chrome && chrome.notifications && chrome.notifications.create) {
-            chrome.notifications.create(notificationId, {
-                type: 'basic',
-                iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
-                title: 'Challenge Completed!',
-                message: 'Great job! You can now access ' + site + '.',
-                priority: 2
-            }, (id) => {
-                if (chrome.runtime.lastError) {
-                    console.log('[v0] Notification error:', chrome.runtime.lastError);
-                }
-            });
-        }
-    } catch (error) {
-        console.log('[v0] Notification error:', error.message);
+        const domain = new URL(url).hostname;
+        return rules.some(rule => {
+            // Match domain, including subdomains
+            if (rule.domain === domain || domain.endsWith('.' + rule.domain)) {
+                return rule.action === 'block';
+            }
+            return false;
+        });
+    } catch (e) {
+        return false;
     }
 }
-
-// Note: Website blocking is handled by content.js (Manifest V3 compatible)
-// The content script checks rules and shows the blocking overlay on matching sites
-
-// Activity cleanup is optional - can be added with proper Manifest V3 patterns if needed
-// For now, activity logs persist until user manually resets data

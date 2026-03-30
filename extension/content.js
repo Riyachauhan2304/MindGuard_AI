@@ -1,25 +1,29 @@
 // Content script for MindGuard Extension
-// Injected into every web page
+// Lightweight blocking - only blocks sites based on synced rules from website
 
-console.log('[MindGuard] Content script loaded');
+console.log('[v0] Content script loaded');
 
 // Get current domain
 const currentDomain = new URL(window.location.href).hostname;
+let isBlocked = false;
 
-// Check if current site should be blocked
-chrome.storage.local.get(['rules', 'settings'], (result) => {
+// Check if blocking is enabled and if current site should be blocked
+chrome.storage.local.get(['blockingEnabled', 'rules'], (result) => {
+    const blockingEnabled = result.blockingEnabled !== false;
     const rules = result.rules || [];
-    const settings = result.settings || {};
 
-    if (!settings.blockingEnabled) {
+    if (!blockingEnabled || !rules.length) {
         return;
     }
 
-    const blockedRule = rules.find(r => 
-        currentDomain.includes(r.domain) && r.action === 'block'
-    );
+    // Check if domain matches any blocking rule
+    const shouldBlock = rules.some(rule => {
+        if (rule.action !== 'block') return false;
+        return currentDomain === rule.domain || currentDomain.endsWith('.' + rule.domain);
+    });
 
-    if (blockedRule) {
+    if (shouldBlock) {
+        isBlocked = true;
         blockPage();
     }
 });
@@ -60,7 +64,7 @@ function blockPage() {
     title.style.cssText = 'margin: 0 0 10px 0; font-size: 24px; color: #667eea;';
 
     const message = document.createElement('p');
-    message.textContent = currentDomain + ' is blocked to help you stay focused.';
+    message.textContent = currentDomain + ' is blocked. Manage rules on the MindGuard website.';
     message.style.cssText = 'margin: 0 0 20px 0; color: #6b7280; font-size: 16px;';
 
     const challenge = document.createElement('div');
@@ -72,7 +76,7 @@ function blockPage() {
     `;
 
     const challengeTitle = document.createElement('p');
-    challengeTitle.textContent = 'Complete a challenge to unlock (in app):';
+    challengeTitle.textContent = 'Complete a challenge in the extension:';
     challengeTitle.style.cssText = 'margin: 0 0 10px 0; font-size: 14px; color: #667eea; font-weight: 600;';
 
     const challenges = document.createElement('div');
@@ -98,7 +102,7 @@ function blockPage() {
     challenge.appendChild(challenges);
 
     const openExtension = document.createElement('button');
-    openExtension.textContent = '↗️ Open MindGuard Extension';
+    openExtension.textContent = 'Click MindGuard Icon to Continue';
     openExtension.style.cssText = `
         width: 100%;
         padding: 12px;
@@ -120,10 +124,6 @@ function blockPage() {
     openExtension.addEventListener('mouseout', () => {
         openExtension.style.transform = 'translateY(0)';
         openExtension.style.boxShadow = 'none';
-    });
-
-    openExtension.addEventListener('click', () => {
-        chrome.runtime.sendMessage({ action: 'openPopup' });
     });
 
     const timer = document.createElement('p');

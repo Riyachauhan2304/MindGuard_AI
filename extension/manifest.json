@@ -1,22 +1,21 @@
 {
   "manifest_version": 3,
-  "name": "MindGuard - AI Focus Firewall",
-  "version": "1.0.0",
-  "description": "Block distractions with AI-powered microtasks. Stay focused and productive.",
+  "name": "MindGuard - Focus Firewall",
+  "version": "2.0.0",
+  "description": "Simple, lightweight blocking extension. Login to sync rules from MindGuard.",
   "permissions": [
     "storage",
     "tabs",
     "activeTab",
     "scripting",
-    "declarativeNetRequest",
-    "notifications"
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "MindGuard",
+    "default_title": "MindGuard - Focus Firewall",
     "default_icons": {
       "16": "icons/icon-16.png",
       "48": "icons/icon-48.png",
@@ -33,7 +32,6 @@
       "run_at": "document_start"
     }
   ],
-  "options_page": "options.html",
   "icons": {
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",
