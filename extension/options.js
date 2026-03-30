@@ -1,19 +1,103 @@
-// Tab Navigation
-document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const tabName = e.target.getAttribute('data-tab');
-        switchTab(tabName);
-    });
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[v0] Options page loaded');
+    initializeAllListeners();
+    loadInitialData();
 });
 
+function initializeAllListeners() {
+    // Tab Navigation
+    const navButtons = document.querySelectorAll('.nav-btn');
+    console.log('[v0] Found', navButtons.length, 'navigation buttons');
+    
+    navButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tabName = e.target.getAttribute('data-tab');
+            console.log('[v0] Switching to tab:', tabName);
+            switchTab(tabName);
+        });
+    });
+
+    // Add Rule Form
+    const addRuleForm = document.getElementById('addRuleForm');
+    if (addRuleForm) {
+        console.log('[v0] Attaching form submit listener');
+        addRuleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            addNewRule();
+        });
+    } else {
+        console.error('[v0] Add rule form not found!');
+    }
+
+    // Save All Settings button
+    const saveBtn = document.getElementById('saveAllBtn');
+    if (saveBtn) {
+        console.log('[v0] Attaching save button listener');
+        saveBtn.addEventListener('click', saveSettings);
+    } else {
+        // Try finding by onclick attribute if no ID
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => {
+            if (btn.textContent.includes('Save All Settings')) {
+                console.log('[v0] Found save button by text');
+                btn.addEventListener('click', saveSettings);
+            }
+        });
+    }
+
+    // Load analytics when analytics tab is clicked
+    const analyticsBtn = document.querySelector('[data-tab="analytics"]');
+    if (analyticsBtn) {
+        analyticsBtn.addEventListener('click', loadAnalytics);
+    }
+
+    // Load profile when profile tab is clicked
+    const profileBtn = document.querySelector('[data-tab="profile"]');
+    if (profileBtn) {
+        profileBtn.addEventListener('click', loadProfile);
+    }
+}
+
+function loadInitialData() {
+    console.log('[v0] Loading initial data');
+    chrome.storage.local.get(['user', 'rules', 'stats'], (result) => {
+        // Ensure user profile exists
+        if (!result.user) {
+            const defaultUser = {
+                id: 'guest-user',
+                name: 'Guest User',
+                email: 'guest@mindguard.local',
+                role: 'user',
+                joinDate: new Date().toISOString()
+            };
+            chrome.storage.local.set({ user: defaultUser }, () => {
+                console.log('[v0] Created default user');
+                loadRules(result.rules || []);
+                loadSettings();
+                renderQuickAdd(result.rules || []);
+            });
+        } else {
+            loadRules(result.rules || []);
+            loadSettings();
+            renderQuickAdd(result.rules || []);
+        }
+    });
+}
+
 function switchTab(tabName) {
+    console.log('[v0] Switching to tab:', tabName);
+    
     // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
 
     // Show selected tab
-    document.getElementById(tabName).classList.add('active');
+    const selectedTab = document.getElementById(tabName);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
 
     // Update nav buttons
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -31,150 +115,38 @@ function switchTab(tabName) {
     }
 }
 
-// Load initial data (auto-initialize with Guest User if needed)
-chrome.storage.local.get(['user', 'rules', 'stats'], (result) => {
-    // Ensure user profile exists, create Guest User if not
-    if (!result.user) {
-        const defaultUser = {
-            id: 'guest-user',
-            name: 'Guest User',
-            email: 'guest@mindguard.local',
-            role: 'user',
-            joinDate: new Date().toISOString()
-        };
-        chrome.storage.local.set({ user: defaultUser }, () => {
-            loadRules(result.rules || []);
-            loadSettings();
-            renderQuickAdd(result.rules || []);
-        });
-    } else {
-        loadRules(result.rules || []);
-        loadSettings();
-        renderQuickAdd(result.rules || []);
-    }
-});
-
-// Rules Management
+// Popular sites for quick adding
 const popularSites = [
     'youtube.com', 'instagram.com', 'facebook.com', 'twitter.com',
     'reddit.com', 'tiktok.com', 'netflix.com', 'twitch.tv',
     'pinterest.com', 'linkedin.com', 'snapchat.com', 'discord.com'
 ];
 
-// Wait for DOM to be ready before attaching event listener
-const addRuleForm = document.getElementById('addRuleForm');
-if (addRuleForm) {
-    console.log('[v0] Add Rule form found and listener attached');
-    addRuleForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        console.log('[v0] Add Rule form submitted');
-
-        const domain = document.getElementById('domain').value.trim();
-        const action = document.getElementById('action').value;
-        
-        console.log('[v0] Domain:', domain, 'Action:', action);
-
-        if (!domain) {
-            showToast('Please enter a domain!');
-            return;
-        }
-
-        chrome.storage.local.get(['rules'], (result) => {
-            const rules = result.rules || [];
-            console.log('[v0] Current rules:', rules);
-
-            if (rules.some(r => r.domain === domain)) {
-                showToast('Rule already exists!');
-                return;
-            }
-
-            const newRule = {
-                id: Date.now().toString(),
-                domain,
-                action,
-                createdAt: new Date().toISOString()
-            };
-
-            console.log('[v0] New rule:', newRule);
-            rules.push(newRule);
-            
-            chrome.storage.local.set({ rules }, () => {
-                console.log('[v0] Rule saved to storage');
-                loadRules(rules);
-                renderQuickAdd(rules);
-                document.getElementById('addRuleForm').reset();
-                showToast('Rule added successfully!');
-                
-                // Notify background script
-                try {
-                    chrome.runtime.sendMessage({ action: 'updateRules', rules }, (response) => {
-                        console.log('[v0] Background script response:', response);
-                    });
-                } catch (error) {
-                    console.log('[v0] SendMessage error:', error);
-                }
-            });
-        });
-    });
-} else {
-    console.log('[v0] ERROR: Add Rule form not found!');
-}
-
-function loadRules(rules) {
-    const container = document.getElementById('rulesList');
-    document.getElementById('rulesCount').textContent = rules.length;
-
-    if (rules.length === 0) {
-        container.innerHTML = '<div class="empty-state">No rules added yet</div>';
+// Add new rule function
+function addNewRule() {
+    console.log('[v0] Adding new rule');
+    
+    const domainInput = document.getElementById('domain');
+    const actionInput = document.getElementById('action');
+    
+    if (!domainInput || !actionInput) {
+        console.error('[v0] Form inputs not found!');
         return;
     }
 
-    container.innerHTML = rules.map(rule => `
-        <div class="rule-item">
-            <div>
-                <span class="rule-domain">${rule.domain}</span>
-                <span class="rule-badge badge-${rule.action}">
-                    ${rule.action === 'block' ? '🚫 Block' : '✅ Allow'}
-                </span>
-            </div>
-            <button class="btn-delete" onclick="deleteRule('${rule.id}')">🗑️ Delete</button>
-        </div>
-    `).join('');
-}
+    const domain = domainInput.value.trim();
+    const action = actionInput.value;
 
-function deleteRule(ruleId) {
-    if (!confirm('Delete this rule?')) return;
+    console.log('[v0] Domain:', domain, 'Action:', action);
 
-    chrome.storage.local.get(['rules'], (result) => {
-        const rules = (result.rules || []).filter(r => r.id !== ruleId);
-        chrome.storage.local.set({ rules }, () => {
-            loadRules(rules);
-            renderQuickAdd(rules);
-            showToast('Rule deleted!');
-            chrome.runtime.sendMessage({ action: 'updateRules', rules });
-        });
-    });
-}
+    if (!domain) {
+        showToast('Please enter a domain!');
+        return;
+    }
 
-function renderQuickAdd(rules) {
-    const container = document.getElementById('quickAddGrid');
-    container.innerHTML = popularSites.map(site => {
-        const exists = rules.some(r => r.domain === site);
-        return `
-            <button 
-                class="quick-add-btn ${exists ? 'added' : ''}" 
-                onclick="quickAddSite('${site}')"
-                ${exists ? 'disabled' : ''}
-            >
-                ${exists ? '✓ ' : ''}${site}
-            </button>
-        `;
-    }).join('');
-}
-
-function quickAddSite(domain) {
     chrome.storage.local.get(['rules'], (result) => {
         const rules = result.rules || [];
+        console.log('[v0] Current rules count:', rules.length);
 
         if (rules.some(r => r.domain === domain)) {
             showToast('Rule already exists!');
@@ -184,22 +156,132 @@ function quickAddSite(domain) {
         const newRule = {
             id: Date.now().toString(),
             domain,
-            action: 'block',
+            action,
             createdAt: new Date().toISOString()
         };
 
         rules.push(newRule);
+        console.log('[v0] New rules count:', rules.length);
+
         chrome.storage.local.set({ rules }, () => {
+            console.log('[v0] Rules saved');
             loadRules(rules);
             renderQuickAdd(rules);
-            showToast(`${domain} added to blocked list!`);
+            domainInput.value = '';
+            showToast('Rule added successfully!');
+
+            // Notify background script
+            try {
+                chrome.runtime.sendMessage(
+                    { action: 'updateRules', rules },
+                    (response) => {
+                        console.log('[v0] Background updated:', response);
+                    }
+                );
+            } catch (error) {
+                console.log('[v0] Message error:', error.message);
+            }
+        });
+    });
+}
+
+// Load and display rules
+function loadRules(rules) {
+    console.log('[v0] Loading', rules.length, 'rules');
+    const rulesList = document.getElementById('rulesList');
+    
+    if (!rulesList) {
+        console.error('[v0] Rules list container not found!');
+        return;
+    }
+
+    rulesList.innerHTML = '';
+
+    if (rules.length === 0) {
+        rulesList.innerHTML = '<p style="color: #999; text-align: center;">No rules added yet</p>';
+        document.getElementById('rulesCount').textContent = '(0)';
+        return;
+    }
+
+    rules.forEach(rule => {
+        const ruleElement = document.createElement('div');
+        ruleElement.className = 'rule-item';
+        ruleElement.innerHTML = `
+            <div class="rule-content">
+                <div class="rule-domain">${rule.domain}</div>
+                <div class="rule-action" style="color: ${rule.action === 'block' ? '#ef4444' : '#10b981'}">
+                    ${rule.action.charAt(0).toUpperCase() + rule.action.slice(1)}
+                </div>
+            </div>
+            <button class="rule-delete" onclick="deleteRule('${rule.id}')">Delete</button>
+        `;
+        rulesList.appendChild(ruleElement);
+    });
+
+    document.getElementById('rulesCount').textContent = `(${rules.length})`;
+}
+
+function deleteRule(ruleId) {
+    console.log('[v0] Deleting rule:', ruleId);
+    chrome.storage.local.get(['rules'], (result) => {
+        const rules = (result.rules || []).filter(r => r.id !== ruleId);
+        chrome.storage.local.set({ rules }, () => {
+            console.log('[v0] Rule deleted');
+            loadRules(rules);
+            renderQuickAdd(rules);
+            showToast('Rule deleted!');
             chrome.runtime.sendMessage({ action: 'updateRules', rules });
         });
     });
 }
 
-// Settings Management
+// Render quick add buttons
+function renderQuickAdd(rules) {
+    console.log('[v0] Rendering quick add buttons');
+    const container = document.getElementById('quickAddSites');
+    
+    if (!container) {
+        console.error('[v0] Quick add container not found!');
+        return;
+    }
+
+    container.innerHTML = '';
+    popularSites.forEach(site => {
+        const exists = rules.some(r => r.domain === site);
+        const btn = document.createElement('button');
+        btn.className = 'quick-add-btn';
+        btn.textContent = site;
+        btn.style.opacity = exists ? '0.5' : '1';
+        btn.style.cursor = exists ? 'not-allowed' : 'pointer';
+        
+        btn.addEventListener('click', () => {
+            if (!exists) {
+                const newRule = {
+                    id: Date.now().toString(),
+                    domain: site,
+                    action: 'block',
+                    createdAt: new Date().toISOString()
+                };
+                chrome.storage.local.get(['rules'], (result) => {
+                    const updatedRules = [...(result.rules || []), newRule];
+                    chrome.storage.local.set({ rules: updatedRules }, () => {
+                        console.log('[v0] Quick add rule created for', site);
+                        loadRules(updatedRules);
+                        renderQuickAdd(updatedRules);
+                        showToast(`${site} blocked!`);
+                        chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules });
+                    });
+                });
+            }
+        });
+        
+        container.appendChild(btn);
+    });
+}
+
+// Load and display settings
 function loadSettings() {
+    console.log('[v0] Loading settings');
     chrome.storage.local.get(['settings'], (result) => {
         const settings = result.settings || {
             focusStart: '09:00',
@@ -212,15 +294,18 @@ function loadSettings() {
 
         document.getElementById('focusStart').value = settings.focusStart || '09:00';
         document.getElementById('focusEnd').value = settings.focusEnd || '17:00';
-        document.getElementById('strictMode').checked = settings.strictMode !== false;
-        document.getElementById('weekendMode').checked = settings.weekendMode === true;
+        document.getElementById('strictMode').checked = settings.strictMode || false;
+        document.getElementById('weekendMode').checked = settings.weekendMode || false;
         document.getElementById('notifications').checked = settings.notifications !== false;
         document.getElementById('theme').value = settings.theme || 'light';
+
+        console.log('[v0] Settings loaded');
     });
 }
 
+// Save settings
 function saveSettings() {
-    console.log('[v0] Saving settings...');
+    console.log('[v0] Saving settings');
     const settings = {
         focusStart: document.getElementById('focusStart').value,
         focusEnd: document.getElementById('focusEnd').value,
@@ -230,67 +315,60 @@ function saveSettings() {
         theme: document.getElementById('theme').value
     };
 
-    console.log('[v0] Settings object:', settings);
+    console.log('[v0] Settings:', settings);
     chrome.storage.local.set({ settings }, () => {
-        console.log('[v0] Settings saved to storage');
+        console.log('[v0] Settings saved');
         showToast('Settings saved successfully!');
+        
         try {
-            chrome.runtime.sendMessage({ action: 'updateSettings', settings }, (response) => {
-                console.log('[v0] Settings update response:', response);
-            });
+            chrome.runtime.sendMessage({ action: 'updateSettings', settings });
         } catch (error) {
-            console.log('[v0] SendMessage error:', error);
+            console.log('[v0] Message error:', error.message);
         }
     });
 }
 
-
-
-// Analytics
+// Load analytics
 function loadAnalytics() {
+    console.log('[v0] Loading analytics');
     chrome.storage.local.get(['stats', 'activity'], (result) => {
         const stats = result.stats || {
+            focusScore: 0,
             blockedCount: 0,
             completedCount: 0,
-            focusScore: 0,
             timeSaved: 0
         };
 
-        document.getElementById('statBlocked').textContent = stats.blockedCount || 0;
-        document.getElementById('statCompleted').textContent = stats.completedCount || 0;
-        document.getElementById('statScore').textContent = stats.focusScore || 0;
-        document.getElementById('statTime').textContent = stats.timeSaved || 0;
-
-        // Get most blocked sites
-        const activity = result.activity || [];
-        const blockedSites = {};
-        
-        activity.forEach(item => {
-            if (item.site) {
-                blockedSites[item.site] = (blockedSites[item.site] || 0) + 1;
-            }
-        });
-
-        const sorted = Object.entries(blockedSites)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10);
-
-        const container = document.getElementById('blockedSites');
-        if (sorted.length === 0) {
-            container.innerHTML = '<div class="empty-state">No blocked sites yet</div>';
-        } else {
-            container.innerHTML = sorted.map(([site, count]) => `
-                <div class="blocked-site-item">
-                    <span class="site-name">${site}</span>
-                    <span class="site-count">${count} times</span>
+        // Update stats display
+        const statsContainer = document.getElementById('analyticsStats');
+        if (statsContainer) {
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${stats.focusScore}</div>
+                    <div class="stat-label">Focus Score</div>
                 </div>
-            `).join('');
+                <div class="stat-card">
+                    <div class="stat-value">${stats.blockedCount}</div>
+                    <div class="stat-label">Sites Blocked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.completedCount}</div>
+                    <div class="stat-label">Challenges Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.timeSaved}h</div>
+                    <div class="stat-label">Time Saved</div>
+                </div>
+            `;
         }
+
+        console.log('[v0] Analytics loaded');
     });
 }
 
-// Profile
+// Load profile
 function loadProfile() {
+    console.log('[v0] Loading profile');
     chrome.storage.local.get(['user', 'settings'], (result) => {
         const user = result.user || {
             name: 'Guest User',
@@ -299,41 +377,46 @@ function loadProfile() {
         };
         const settings = result.settings || {};
 
-        document.getElementById('profileName').textContent = user.name || 'Guest User';
-        document.getElementById('profileEmail').textContent = user.email || 'guest@mindguard.local';
-        document.getElementById('profileRole').textContent = `Role: ${user.role || 'user'}`;
-        document.getElementById('profileAvatar').textContent = (user.name || 'G').charAt(0).toUpperCase();
+        const profileName = document.getElementById('profileName');
+        const profileEmail = document.getElementById('profileEmail');
+        const profileRole = document.getElementById('profileRole');
+        const profileAvatar = document.getElementById('profileAvatar');
 
-        document.getElementById('country').value = settings.country || 'IN';
-        document.getElementById('language').value = settings.language || 'en';
+        if (profileName) profileName.textContent = user.name || 'Guest User';
+        if (profileEmail) profileEmail.textContent = user.email || 'guest@mindguard.local';
+        if (profileRole) profileRole.textContent = `Role: ${user.role || 'user'}`;
+        if (profileAvatar) profileAvatar.textContent = (user.name || 'G').charAt(0).toUpperCase();
+
+        const countrySelect = document.getElementById('country');
+        const languageSelect = document.getElementById('language');
+        
+        if (countrySelect) countrySelect.value = settings.country || 'IN';
+        if (languageSelect) languageSelect.value = settings.language || 'en';
+
+        // Save country/language changes
+        if (countrySelect) {
+            countrySelect.addEventListener('change', saveProfileSettings);
+        }
+        if (languageSelect) {
+            languageSelect.addEventListener('change', saveProfileSettings);
+        }
+
+        console.log('[v0] Profile loaded');
     });
-
-    // Save profile changes
-    document.getElementById('country').addEventListener('change', saveProfileSettings);
-    document.getElementById('language').addEventListener('change', saveProfileSettings);
 }
 
 function saveProfileSettings() {
+    console.log('[v0] Saving profile settings');
     chrome.storage.local.get(['settings'], (result) => {
         const settings = result.settings || {};
         settings.country = document.getElementById('country').value;
         settings.language = document.getElementById('language').value;
-
+        
         chrome.storage.local.set({ settings }, () => {
-            showToast('Profile updated!');
+            console.log('[v0] Profile settings saved');
+            showToast('Profile settings saved!');
         });
     });
-}
-
-// Utility Functions
-function showToast(message) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('show');
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
 }
 
 function clearData() {
@@ -350,6 +433,7 @@ function clearData() {
         activity: [],
         rules: []
     }, () => {
+        console.log('[v0] Data cleared');
         showToast('All data has been reset!');
         chrome.runtime.sendMessage({ action: 'updateRules', rules: [] });
         setTimeout(() => {
@@ -358,4 +442,22 @@ function clearData() {
     });
 }
 
-// Data management is handled by the extension, no logout needed
+// Toast notification
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    if (!toast) {
+        console.error('[v0] Toast element not found!');
+        return;
+    }
+
+    toast.textContent = message;
+    toast.style.display = 'block';
+    toast.style.animation = 'slideIn 0.3s ease-out';
+
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 300);
+    }, 2000);
+}
