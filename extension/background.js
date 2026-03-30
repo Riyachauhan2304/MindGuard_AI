@@ -60,35 +60,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-// Optional: Sync rules from website every hour (when user is logged in)
-chrome.alarms.create('syncRules', { periodInMinutes: 60 });
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === 'syncRules') {
-        syncRulesFromWebsite();
-    }
-});
-
-async function syncRulesFromWebsite() {
-    try {
-        chrome.storage.local.get(['user'], async (result) => {
-            if (!result.user || !result.user.email) {
-                return; // User not logged in
-            }
-            
-            // TODO: Fetch rules from your MindGuard backend API
-            // const response = await fetch('https://your-mindguard-api.com/api/rules', {
-            //     headers: { 'Authorization': `Bearer ${result.user.token}` }
-            // });
-            // const data = await response.json();
-            // chrome.storage.local.set({ rules: data.rules });
-            
-            console.log('[v0] Rules sync completed (mock)');
-        });
-    } catch (error) {
-        console.log('[v0] Error syncing rules:', error);
-    }
-}
+// Optional: Sync rules from website when user logs in (popup.js will trigger)
+// Rules sync is initiated from popup.js when user logs in via API
+// No need for periodic sync - happens on demand from popup
 
 // Function to check if URL matches any blocking rule
 function shouldBlockUrl(url, rules) {
