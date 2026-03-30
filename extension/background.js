@@ -144,56 +144,8 @@ function showSuccessNotification(site) {
     });
 }
 
-// Handle web request blocking
-chrome.webRequest?.onBeforeRequest?.addListener(
-    (details) => {
-        // Check if URL should be blocked
-        const url = new URL(details.url);
-        const domain = url.hostname;
+// Note: Website blocking is handled by content.js (Manifest V3 compatible)
+// The content script checks rules and shows the blocking overlay on matching sites
 
-        chrome.storage.local.get(['rules', 'settings'], (result) => {
-            const rules = result.rules || [];
-            const settings = result.settings || {};
-
-            if (!settings.blockingEnabled) {
-                return;
-            }
-
-            const blockedRule = rules.find(r => 
-                r.domain === domain && r.action === 'block'
-            );
-
-            if (blockedRule) {
-                recordBlockedSite(details.url, domain);
-                // Redirect to blocked page
-                return { 
-                    redirectUrl: chrome.runtime.getURL('blocked.html') + '?url=' + encodeURIComponent(domain)
-                };
-            }
-        });
-    },
-    { urls: ['<all_urls>'] },
-    ['blocking']
-);
-
-// Clean up old activity daily
-chrome.alarms.create('cleanupActivity', { periodInMinutes: 24 * 60 });
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === 'cleanupActivity') {
-        chrome.storage.local.get(['activity'], (result) => {
-            const activity = result.activity || [];
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            // Keep only today's activity
-            const filtered = activity.filter(item => {
-                const itemDate = new Date(item.timestamp);
-                itemDate.setHours(0, 0, 0, 0);
-                return itemDate.getTime() === today.getTime();
-            });
-
-            chrome.storage.local.set({ activity: filtered });
-        });
-    }
-});
+// Activity cleanup is optional - can be added with proper Manifest V3 patterns if needed
+// For now, activity logs persist until user manually resets data
