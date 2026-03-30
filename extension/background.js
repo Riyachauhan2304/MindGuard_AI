@@ -88,13 +88,13 @@ function recordBlockedSite(site, domain) {
 
         chrome.storage.local.set({ activity, stats });
 
-        // Show notification if enabled
-        chrome.storage.local.get(['settings'], (result) => {
-            const settings = result.settings || {};
-            if (settings.notifications) {
-                showBlockedNotification(domain);
-            }
-        });
+        // Show notification if enabled (optional feature)
+        // chrome.storage.local.get(['settings'], (result) => {
+        //     const settings = result.settings || {};
+        //     if (settings.notifications) {
+        //         showBlockedNotification(domain);
+        //     }
+        // });
     });
 }
 
@@ -117,42 +117,52 @@ function completeChallenge(site) {
 
         chrome.storage.local.set({ activity, stats });
 
-        // Show success notification
-        showSuccessNotification(site);
+        // Show success notification (optional feature)
+        // showSuccessNotification(site);
     });
 }
 
 // Show notification when site is blocked
 function showBlockedNotification(domain) {
     try {
-        if (chrome.notifications) {
-            chrome.notifications.create({
+        const notificationId = 'blocked-' + Date.now();
+        if (chrome && chrome.notifications && chrome.notifications.create) {
+            chrome.notifications.create(notificationId, {
                 type: 'basic',
                 iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
                 title: 'Site Blocked',
-                message: `${domain} is blocked. Complete a challenge to unlock it!`,
+                message: domain + ' is blocked. Complete a challenge to unlock it!',
                 priority: 2
+            }, (id) => {
+                if (chrome.runtime.lastError) {
+                    console.log('[v0] Notification error:', chrome.runtime.lastError);
+                }
             });
         }
     } catch (error) {
-        console.log('[v0] Notification error:', error);
+        console.log('[v0] Notification error:', error.message);
     }
 }
 
 // Show notification for challenge completion
 function showSuccessNotification(site) {
     try {
-        if (chrome.notifications) {
-            chrome.notifications.create({
+        const notificationId = 'success-' + Date.now();
+        if (chrome && chrome.notifications && chrome.notifications.create) {
+            chrome.notifications.create(notificationId, {
                 type: 'basic',
                 iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
                 title: 'Challenge Completed!',
-                message: `Great job! You can now access ${site}.`,
+                message: 'Great job! You can now access ' + site + '.',
                 priority: 2
+            }, (id) => {
+                if (chrome.runtime.lastError) {
+                    console.log('[v0] Notification error:', chrome.runtime.lastError);
+                }
             });
         }
     } catch (error) {
-        console.log('[v0] Notification error:', error);
+        console.log('[v0] Notification error:', error.message);
     }
 }
 
