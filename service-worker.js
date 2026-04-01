@@ -6,22 +6,22 @@ self.addEventListener("install", function(event){
     event.waitUntil(
         caches.open(CACHE_NAME).then(function(cache){
             return cache.addAll([
-                "/",
-                "/index.html",
+                "/MindGuard_AI/",
+                "/MindGuard_AI/index.html",
 
                 // public pages
-                "/public/login.html",
-                "/public/register.html",
-                "/public/dashboard.html",
-                "/public/features.html",
-                "/public/about.html",
+                "/MindGuard_AI/public/login.html",
+                "/MindGuard_AI/public/register.html",
+                "/MindGuard_AI/public/dashboard.html",
+                "/MindGuard_AI/public/features.html",
+                "/MindGuard_AI/public/about.html",
 
                 // css + js
-                "/public/assets/css/main.css",
-                "/public/assets/js/lazy-load.js",
+                "/MindGuard_AI/public/assets/css/main.css",
+                "/MindGuard_AI/public/assets/js/lazy-load.js",
 
-                // images (important ones)
-                "/public/assets/images/logo.webp"
+                // images
+                "/MindGuard_AI/public/assets/images/logo.webp"
             ]);
         })
     );
