@@ -264,9 +264,9 @@
       gtag('js', new Date());
       gtag('config', 'G-XXXXXXXXXX');
         //service worker register 
-        if ("serviceWorker" in navigator) {
+       if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js")
+    navigator.serviceWorker.register("/MindGuard_AI/service-worker.js")
       .then(reg => console.log("SW Registered", reg.scope))
       .catch(err => console.log("SW Error", err));
   });
