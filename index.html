@@ -263,6 +263,12 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-XXXXXXXXXX');
+        //service worker register 
+        if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js")
+    .then(() => console.log("SW Registered"))
+    .catch(err => console.log(err));
+}
     </script>
 </body>
 </html>
