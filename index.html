@@ -17,6 +17,45 @@
     <!-- Preload critical assets -->
     <link rel="preload" href="assets/fonts/inter-bold.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com">
+
+     <!-- Font subsetting definitions -->
+    <style>
+        /* Latin lowercase + numbers subsetting */
+        @font-face {
+            font-family: 'Inter';
+            src: url('assets/fonts/inter-regular.woff2') format('woff2');
+            font-weight: 400;
+            font-display: swap;
+            unicode-range: U+0020-007E, U+00A0-00FF;
+        }
+        
+        /* Bold font subsetting */
+        @font-face {
+            font-family: 'Inter';
+            src: url('assets/fonts/inter-bold.woff2') format('woff2');
+            font-weight: 700;
+            font-display: swap;
+            unicode-range: U+0020-007E, U+00A0-00FF;
+        }
+        
+        /* Semibold font subsetting */
+        @font-face {
+            font-family: 'Inter';
+            src: url('assets/fonts/inter-semibold.woff2') format('woff2');
+            font-weight: 600;
+            font-display: swap;
+            unicode-range: U+0020-007E, U+00A0-00FF;
+        }
+        
+        /* Extra bold font subsetting */
+        @font-face {
+            font-family: 'Inter';
+            src: url('assets/fonts/inter-extrabold.woff2') format('woff2');
+            font-weight: 800;
+            font-display: swap;
+            unicode-range: U+0020-007E, U+00A0-00FF;
+        }
+    </style>
     
     <!-- Critical CSS inline for fast render -->
     <style>
